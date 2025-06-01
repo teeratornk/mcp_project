@@ -1,0 +1,4 @@
+fastmcp
+python-dotenv
+arxiv
+openai
