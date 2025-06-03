@@ -3,7 +3,7 @@
 This project showcases how to build a terminal-based research assistant using Large Language Models (LLMs), Azure OpenAI, and the arXiv API. It includes two progressively enhanced implementations:
 
 - **Baseline version** using traditional API calls
-- **Advanced version** using the [Model Context Protocal (MCP)](https://mcp.readthedocs.io/en/latest/) via [FastMCP](https://github.com/pacman82/fastmcp)
+- **Advanced version** using the Model Context Protocol (MCP) via FastMCP
 
 ---
 
@@ -13,7 +13,7 @@ This project showcases how to build a terminal-based research assistant using La
 Introduces a basic, step-by-step implementation using arXiv and Azure OpenAI APIs without MCP. Ideal for beginners.
 
 🛠 **[From API Calls to MCP: Developing an LLM-Powered Research Assistant](https://medium.com/@tkadeethum/from-api-calls-to-mcp-developing-an-llm-powered-research-assistant-5bc806585ab7)**  
-Extends the previous implementation by integrating [FastMCP](https://github.com/pacman82/fastmcp) for a structured and agent-ready architecture. This article explains the benefits of MCP and showcases tool chaining.
+Extends the previous implementation by integrating FastMCP for a structured and agent-ready architecture. This article explains the benefits of MCP and showcases tool chaining.
 
 ---
 
