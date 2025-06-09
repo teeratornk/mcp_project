@@ -37,22 +37,26 @@ class MCP_ChatBot:
                 info_text = info_result.content[0].text
                 print(f"📄 Info for {pid}:\n{info_text[:400]}...\n")
 
-                summary_text = ""
-                try:
-                    info_json = json.loads(info_text)
-                    summary_text = info_json.get("summary", "")
-                except Exception as e:
-                    print(f"⚠️ Failed to parse summary field: {e}")
+                # Try getting full text using get_full_text tool
+                full_text = None
+                if "get_full_text" in {tool["function"]["name"] for tool in self.available_tools}:
+                    print(f"📥 Downloading full text for {pid}")
+                    full_text_result = await self.session.call_tool("get_full_text", {"paper_id": pid})
+                    full_text = full_text_result.content[0].text
+                    print(f"📄 Full text (truncated preview):\n{full_text[:500]}...\n")
 
-                if not summary_text and "summarize_paper" in {tool["function"]["name"] for tool in self.available_tools}:
+                # Choose what to summarize
+                text_to_summarize = full_text or info_text  # Fallback to metadata if full text fails
+
+                if "summarize_paper" in {tool["function"]["name"] for tool in self.available_tools}:
                     print(f"🧠 Summarizing {pid}")
-                    summary_result = await self.session.call_tool("summarize_paper", {"text": info_text})
+                    summary_result = await self.session.call_tool("summarize_paper", {"text": text_to_summarize})
                     summary_text = summary_result.content[0].text
-
-                print(f"✅ Summary for {pid}:\n{summary_text}\n")
-
+                    print(f"✅ Summary for {pid}:\n{summary_text}\n")
+                else:
+                    print("❌ summarize_paper tool not available.")
             except Exception as e:
-                print(f"⚠️ Error during info/summarize chain: {e}")
+                print(f"⚠️ Error during extract/full_text/summarize chain for {pid}: {e}")
 
     async def process_query(self, query: str):
         messages = self.message_history + [{"role": "user", "content": query}]

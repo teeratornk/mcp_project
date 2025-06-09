@@ -10,4 +10,5 @@ dependencies = [
     "mcp>=1.9.1",
     "nest-asyncio>=1.6.0",
     "openai>=1.82.0",
+    "pymupdf>=1.26.0",
 ]

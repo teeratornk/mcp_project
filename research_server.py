@@ -2,6 +2,9 @@
 import os
 import json
 import arxiv
+import fitz  # PyMuPDF
+import tempfile
+import os
 from pathlib import Path
 from typing import List
 from dotenv import load_dotenv
@@ -89,6 +92,21 @@ def summarize_paper(text: str) -> str:
         max_completion_tokens=500
     )
     return response.choices[0].message.content.strip()
+
+@mcp.tool()
+def get_full_text(paper_id: str) -> str:
+    """Download and extract full text from an arXiv paper using its ID."""
+    try:
+        paper = next(arxiv.Search(id_list=[paper_id]).results())
+        with tempfile.TemporaryDirectory() as tmpdir:
+            pdf_path = os.path.join(tmpdir, f"{paper_id}.pdf")
+            paper.download_pdf(filename=pdf_path)
+
+            doc = fitz.open(pdf_path)
+            full_text = "\n".join([page.get_text() for page in doc])
+            return full_text[:6000]  # Truncate if needed (LLM context length)
+    except Exception as e:
+        return f"Failed to fetch or extract text for {paper_id}: {e}"
 
 
 if __name__ == "__main__":

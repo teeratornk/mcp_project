@@ -21,7 +21,7 @@ fi
 source .venv/bin/activate
 
 # Step 4: Install required dependencies (only installs if missing)
-required_packages=("fastmcp" "mcp" "python-dotenv" "nest_asyncio" "openai")
+required_packages=("fastmcp" "mcp" "python-dotenv" "nest_asyncio" "openai" "pymupdf" "arxiv")
 
 for pkg in "${required_packages[@]}"; do
   if ! uv pip freeze | grep -q "$pkg"; then
