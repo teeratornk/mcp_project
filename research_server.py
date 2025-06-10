@@ -104,9 +104,26 @@ def get_full_text(paper_id: str) -> str:
 
             doc = fitz.open(pdf_path)
             full_text = "\n".join([page.get_text() for page in doc])
-            return full_text[:6000]  # Truncate if needed (LLM context length)
+            return full_text[:20000]  # Truncate if needed (LLM context length)
     except Exception as e:
         return f"Failed to fetch or extract text for {paper_id}: {e}"
+
+@mcp.tool()
+def list_all_papers() -> dict:
+    """List all downloaded paper IDs grouped by topic."""
+    topic_papers = {}
+    for subdir in Path(PAPER_DIR).iterdir():
+        if subdir.is_dir():
+            topic = subdir.name.replace("_", " ")
+            file_path = subdir / "papers_info.json"
+            if file_path.exists():
+                try:
+                    with open(file_path) as f:
+                        info = json.load(f)
+                        topic_papers[topic] = list(info.keys())
+                except Exception:
+                    topic_papers[topic] = ["Error reading metadata"]
+    return topic_papers
 
 
 if __name__ == "__main__":
