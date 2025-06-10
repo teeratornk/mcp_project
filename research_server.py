@@ -182,6 +182,38 @@ def get_topic_papers(topic: str) -> str:
     except Exception as e:
         return f"# ⚠️ Error reading topic `{topic}`: {e}"
 
+@mcp.prompt()
+def generate_search_prompt(topic: str, num_papers: int = 5) -> str:
+    """Generate a prompt to search and analyze academic papers on a specific topic."""
+    return f"""Please assist in researching the topic **'{topic}'** by performing the following:
+
+### Step 1: Search
+Use the `search_papers(topic="{topic}", max_results={num_papers})` tool to retrieve up to {num_papers} recent or relevant academic papers.
+
+### Step 2: Extract Details
+For each retrieved paper, extract the following using `extract_info` and/or `summarize_paper` tools:
+- **Title**
+- **Authors**
+- **Publication date**
+- **Brief summary of key findings**
+- **Main contributions or innovations**
+- **Methodologies used**
+- **Relevance to the topic** '{topic}'
+
+### Step 3: Synthesize the Research Landscape
+After reviewing the papers, provide a synthesis of the field:
+- A general **overview** of current research in **'{topic}'**
+- **Common trends** or methodologies across papers
+- **Key research gaps** or unanswered questions
+- Identification of **notable or highly influential papers**
+
+### Output Format
+Organize your response with clear section headings and bullet points for readability. Provide:
+- A short **summary per paper**
+- Followed by an **integrated overview** of the research area
+
+Be concise but thorough in both extraction and synthesis."""
+
 
 
 if __name__ == "__main__":

@@ -23,6 +23,7 @@ class MCP_ChatBot:
         self.session: ClientSession = None
         self.available_tools: List[dict] = []
         self.sessions = {}
+        self.available_prompts = []
         self.client = AzureOpenAI(
             api_key=AZURE_OPENAI_API_KEY,
             api_version=AZURE_OPENAI_API_VERSION,
@@ -160,6 +161,67 @@ class MCP_ChatBot:
         except Exception as e:
             print(f"❌ Error fetching resource '{resource_uri}': {e}")
 
+    async def list_available_prompts(self):
+        """List all available prompts and cache them."""
+        if not self.session:
+            print("❌ No active session.")
+            return
+
+        try:
+            response = await self.session.list_prompts()
+            if response and response.prompts:
+                print("\n🧠 Available Prompts:")
+                print("──────────────────────")
+                for prompt in response.prompts:
+                    self.sessions[prompt.name] = self.session
+                    self.available_prompts.append({
+                        "name": prompt.name,
+                        "description": prompt.description,
+                        "arguments": prompt.arguments
+                    })
+                    print(f"- {prompt.name}: {prompt.description}")
+            else:
+                print("⚠️ No prompts available.")
+        except Exception as e:
+            print(f"❌ Error listing prompts: {e}")
+
+    async def execute_prompt(self, prompt_name: str, args: dict):
+        session = self.sessions.get(prompt_name, self.session)
+
+        if not session:
+            print(f"❌ Prompt '{prompt_name}' not found.")
+            return
+
+        # 💡 Fix: Convert all values to strings
+        args = {k: str(v) for k, v in args.items()}
+
+        try:
+            result = await session.get_prompt(prompt_name, arguments=args)
+
+            if result and result.messages:
+                content = result.messages[0].content
+
+                if isinstance(content, str):
+                    prompt_text = content
+                elif hasattr(content, "text"):
+                    prompt_text = content.text
+                else:
+                    prompt_text = " ".join(
+                        c.text if hasattr(c, "text") else str(c)
+                        for c in content
+                    )
+
+                print(f"\n📥 Generated Prompt from '{prompt_name}':\n{prompt_text}\n")
+                await self.process_query(prompt_text)
+            else:
+                print(f"⚠️ No prompt content returned from '{prompt_name}'.")
+
+        except Exception as e:
+            print(f"❌ Error executing prompt '{prompt_name}': {e}")
+
+
+
+
     async def chat_loop(self):
         print("\n🚀 MCP Chatbot Started!")
         print("Type your queries or special commands. Type 'help' for options, or 'quit' to exit.")
@@ -181,6 +243,7 @@ class MCP_ChatBot:
                     print("\n📖 Available commands:")
                     print("  • list tools        – Show all available tools")
                     print("  • list resources    – Show all available resources")
+                    print("  • list prompts      – Show all available prompts")
                     print("  • papers://topic    – Access a specific topic resource")
                     print("  • <any query>       – Let the assistant process your query")
                     continue
@@ -195,15 +258,39 @@ class MCP_ChatBot:
                     await self.list_available_resources()
                     continue
 
+                elif lower_query in {"list prompts", "show prompts", "available prompts"}:
+                    await self.list_available_prompts()
+                    continue
+
                 elif query.startswith("papers://"):
                     await self.get_resource(query)
                     continue
+
+                elif lower_query.startswith("run prompt "):
+                    try:
+                        parts = query.split()
+                        prompt_name = parts[2]
+                        kwargs = {}
+                        for item in parts[3:]:
+                            if '=' in item:
+                                key, value = item.split("=", 1)
+                                kwargs[key] = int(value) if value.isdigit() else value
+
+                        if prompt_name not in {p["name"] for p in self.available_prompts}:
+                            print(f"❌ Prompt '{prompt_name}' not found.")
+                        else:
+                            await self.execute_prompt(prompt_name, kwargs)
+                    except Exception as e:
+                        print(f"❌ Error parsing or running prompt: {e}")
+                    continue
+
 
                 # Default: delegate to model
                 await self.process_query(query)
 
             except Exception as e:
                 print(f"\n❌ Error: {str(e)}")
+
 
 
     async def connect_to_server_and_run(self, single_query: str = None):
@@ -217,10 +304,10 @@ class MCP_ChatBot:
                 self.session = session
                 await session.initialize()
 
+                # 🧰 List tools
                 response = await session.list_tools()
                 print("\n✅ Connected to server")
                 print("🧰 Tools:", [tool.name for tool in response.tools])
-
 
                 self.available_tools = [
                     {
@@ -237,10 +324,14 @@ class MCP_ChatBot:
                     } for tool in response.tools
                 ]
 
+                # 🔗 List resources and 🧠 prompts
+                await self.list_available_resources()
+                await self.list_available_prompts()
+
+                # 🔁 Run interaction
                 if single_query:
                     await self.process_query(single_query)
                 else:
-                    await self.list_available_resources()  # 👈 Add this
                     await self.chat_loop()
 
 
