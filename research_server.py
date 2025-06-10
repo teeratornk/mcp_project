@@ -125,6 +125,64 @@ def list_all_papers() -> dict:
                     topic_papers[topic] = ["Error reading metadata"]
     return topic_papers
 
+@mcp.resource("papers://folders")
+def get_available_folders() -> str:
+    """
+    List all available topic folders in the papers directory.
+    
+    This resource provides a simple list of all available topic folders.
+    """
+    folders = []
+
+    if os.path.exists(PAPER_DIR):
+        for topic_dir in os.listdir(PAPER_DIR):
+            topic_path = os.path.join(PAPER_DIR, topic_dir)
+            if os.path.isdir(topic_path):
+                papers_file = os.path.join(topic_path, "papers_info.json")
+                if os.path.exists(papers_file):
+                    folders.append(topic_dir)
+
+    content = "# 📁 Available Topics\n\n"
+    if folders:
+        for folder in folders:
+            display_name = folder.replace("_", " ").title()
+            content += f"- [{display_name}](papers://{folder})\n"
+    else:
+        content += "_No topics found. Use the `search_papers` tool to create some._\n"
+
+    return content
+
+@mcp.resource("papers://{topic}")
+def get_topic_papers(topic: str) -> str:
+    """
+    Concise view of papers under a specific topic.
+    """
+    topic_dir = topic.lower().replace(" ", "_")
+    papers_file = os.path.join(PAPER_DIR, topic_dir, "papers_info.json")
+
+    if not os.path.exists(papers_file):
+        return f"# ❌ No papers found for topic: `{topic}`\nTry using `search_papers('{topic}')` to fetch some."
+
+    try:
+        with open(papers_file, "r") as f:
+            papers_data = json.load(f)
+
+        content = f"# 📚 Topic: {topic.replace('_', ' ').title()}\n"
+        content += f"Found {len(papers_data)} paper(s):\n\n"
+
+        for i, (paper_id, paper) in enumerate(papers_data.items(), 1):
+            content += f"### {i}. {paper['title']}\n"
+            content += f"- 🆔 `{paper_id}` | 🗓 {paper['published']}\n"
+            content += f"- 👥 {', '.join(paper['authors'])}\n"
+            content += f"- 🔗 [PDF]({paper['pdf_url']})\n"
+            content += f"- 📝 Summary: {paper['summary'][:200].strip()}...\n\n"
+
+        return content
+
+    except Exception as e:
+        return f"# ⚠️ Error reading topic `{topic}`: {e}"
+
+
 
 if __name__ == "__main__":
     mcp.run(transport='stdio')

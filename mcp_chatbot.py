@@ -22,6 +22,7 @@ class MCP_ChatBot:
     def __init__(self):
         self.session: ClientSession = None
         self.available_tools: List[dict] = []
+        self.sessions = {}
         self.client = AzureOpenAI(
             api_key=AZURE_OPENAI_API_KEY,
             api_version=AZURE_OPENAI_API_VERSION,
@@ -120,17 +121,90 @@ class MCP_ChatBot:
         else:
             print(assistant_message.content)
 
+    async def list_available_resources(self):
+        """List all available resources and cache their sessions."""
+        if not self.session:
+            print("❌ No active session.")
+            return
+
+        try:
+            response = await self.session.list_resources()
+            if response and response.resources:
+                print("\n🔗 Available Resources:")
+                print("──────────────────────")
+                for res in response.resources:
+                    resource_uri = str(res.uri)
+                    self.sessions[resource_uri] = self.session  # cache for get_resource()
+                    print(f"- {resource_uri}")
+            else:
+                print("⚠️ No resources available.")
+        except Exception as e:
+            print(f"❌ Error listing resources: {e}")
+
+    async def get_resource(self, resource_uri: str):
+        # Try to find the correct session
+        session = self.session
+
+        if not session:
+            print(f"❌ No active session for resource: {resource_uri}")
+            return
+
+        try:
+            result = await session.read_resource(uri=resource_uri)
+            if result and result.contents:
+                print(f"\n📘 Resource: {resource_uri}")
+                print("────────────────────────────────────────────")
+                print(result.contents[0].text)
+            else:
+                print("⚠️ No content available in resource.")
+        except Exception as e:
+            print(f"❌ Error fetching resource '{resource_uri}': {e}")
+
     async def chat_loop(self):
-        print("\nMCP Chatbot Started!")
-        print("Type your queries or 'quit' to exit.")
+        print("\n🚀 MCP Chatbot Started!")
+        print("Type your queries or special commands. Type 'help' for options, or 'quit' to exit.")
+
         while True:
             try:
-                query = input("\nQuery: ").strip()
-                if query.lower() == 'quit':
+                query = input("\n🗨️ Query: ").strip()
+
+                if not query:
+                    continue
+
+                lower_query = query.lower()
+
+                if lower_query == "quit":
+                    print("👋 Exiting MCP Chatbot. Goodbye!")
                     break
+
+                elif lower_query == "help":
+                    print("\n📖 Available commands:")
+                    print("  • list tools        – Show all available tools")
+                    print("  • list resources    – Show all available resources")
+                    print("  • papers://topic    – Access a specific topic resource")
+                    print("  • <any query>       – Let the assistant process your query")
+                    continue
+
+                elif lower_query == "list tools":
+                    print("\n🧰 Available Tools:")
+                    for tool in self.available_tools:
+                        print(f"- {tool['function']['name']}: {tool['function']['description']}")
+                    continue
+
+                elif lower_query in {"list resources", "show resources", "available resources"}:
+                    await self.list_available_resources()
+                    continue
+
+                elif query.startswith("papers://"):
+                    await self.get_resource(query)
+                    continue
+
+                # Default: delegate to model
                 await self.process_query(query)
+
             except Exception as e:
-                print(f"\nError: {str(e)}")
+                print(f"\n❌ Error: {str(e)}")
+
 
     async def connect_to_server_and_run(self, single_query: str = None):
         server_params = StdioServerParameters(
@@ -144,7 +218,9 @@ class MCP_ChatBot:
                 await session.initialize()
 
                 response = await session.list_tools()
-                print("\n✅ Connected to server with tools:", [tool.name for tool in response.tools])
+                print("\n✅ Connected to server")
+                print("🧰 Tools:", [tool.name for tool in response.tools])
+
 
                 self.available_tools = [
                     {
@@ -164,7 +240,9 @@ class MCP_ChatBot:
                 if single_query:
                     await self.process_query(single_query)
                 else:
+                    await self.list_available_resources()  # 👈 Add this
                     await self.chat_loop()
+
 
 
 async def main():
