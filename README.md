@@ -17,6 +17,7 @@ Extends the previous implementation by integrating FastMCP for a structured and 
 
 🧠 **[Expanding FastMCP with Prompts and Resources for Smarter Research Assistants](https://medium.com/@tkadeethum/expanding-fastmcp-with-prompts-and-resources-for-smarter-research-assistants-7bded4d1e35f)**  
 Completes the series by showing how to go beyond tools, introducing prompt templates and structured resources to enable memory, reasoning, and more advanced agent workflows.
+
 ---
 
 ## 📁 Project Structure
