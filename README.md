@@ -15,6 +15,8 @@ Introduces a basic, step-by-step implementation using arXiv and Azure OpenAI API
 🛠 **[From API Calls to MCP: Developing an LLM-Powered Research Assistant](https://medium.com/@tkadeethum/from-api-calls-to-mcp-developing-an-llm-powered-research-assistant-5bc806585ab7)**  
 Extends the previous implementation by integrating FastMCP for a structured and agent-ready architecture. This article explains the benefits of MCP and showcases tool chaining.
 
+🧠 **[Expanding FastMCP with Prompts and Resources for Smarter Research Assistants](https://medium.com/@tkadeethum/expanding-fastmcp-with-prompts-and-resources-for-smarter-research-assistants-7bded4d1e35f)**  
+Completes the series by showing how to go beyond tools, introducing prompt templates and structured resources to enable memory, reasoning, and more advanced agent workflows.
 ---
 
 ## 📁 Project Structure
